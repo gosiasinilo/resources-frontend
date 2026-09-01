@@ -34,6 +34,7 @@ class ApiClient {
   ): Promise<T> {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "true",
       ...(BASIC_AUTH ? { Authorization: BASIC_AUTH } : {}),
       ...opts.headers,
     };
