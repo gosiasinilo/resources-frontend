@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-bg text-text font-sans antialiased;
+  }
+}
+
+@layer components {
+  .input {
+    @apply w-full bg-bg border border-border focus:border-highlight
+           text-text rounded-sm px-3 py-2.5 text-sm outline-none
+           transition-colors placeholder:text-inactive;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5
+           rounded-full text-xs font-sans border;
+  }
+  .badge-initiated {
+    @apply text-important  border-important/30  bg-important/10;
+  }
+  .badge-assigned {
+    @apply text-highlight/60 border-highlight/20 bg-highlight/5;
+  }
+  .badge-active {
+    @apply text-highlight   border-highlight/30  bg-highlight/10;
+  }
+  .badge-completed {
+    @apply text-secondary   border-secondary/30  bg-secondary/10;
+  }
+
+  .skill-tag {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1
+           bg-toplayer/40 border border-border
+           text-secondary rounded-full text-xs;
+  }
+
+  .section-label {
+    @apply text-xs text-inactive uppercase tracking-wider;
+  }
+}
