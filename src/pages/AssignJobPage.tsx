@@ -15,11 +15,26 @@ function dateOverlap(s1: string, e1: string, s2: string, e2: string) {
   return s1 <= e2 && s2 <= e1;
 }
 
-function isTempAvailable(temp: TempDetail, job: Job) {
+// Mirrors the backend rule (JobAssigning.assignTemp): ANY job the temp already
+// holds that overlaps these dates blocks the assignment, regardless of its
+// status. Keeping this in sync with the backend is what stops a job being
+// listed here and then rejected with TEMP_BUSY on the Assign click.
+function isTempFree(temp: TempDetail, job: Job) {
   return !temp.jobs.some(tj =>
-    tj.status !== 'COMPLETED' &&
     dateOverlap(tj.startDate, tj.endDate, job.startDate, job.endDate)
   );
+}
+
+// Matches the app-wide rule (see JobsPage / JobCard): an unfinished job that is
+// past its end date is "overdue" — it needs closing, not staffing.
+function isOverdue(job: Job, today: string) {
+  return ['INITIATED', 'ASSIGNED', 'IN_PROGRESS'].includes(job.status) &&
+    job.endDate < today;
+}
+
+// A job can be filled only while it is still unassigned and not yet overdue.
+function isFillable(job: Job, today: string) {
+  return job.status === 'INITIATED' && !job.temp && !isOverdue(job, today);
 }
 
 export default function AssignJobPage() {
@@ -54,10 +69,19 @@ export default function AssignJobPage() {
       setAssignedJobName(job.name);
       setSuccess(true);
     } catch (err: any) {
-      const d = err.data?.details;
-      const msg = d
-        ? (Object.values(d).flat() as string[])[0]
-        : err.message || 'Assignment failed';
+      const data = err.data;
+      let msg: string;
+      if (data?.errorCode === 'TEMP_BUSY') {
+        const next = data.details?.nextAvailableDate?.[0];
+        msg = next
+          ? `${temp?.firstName ?? 'This temp'} is already booked for these dates — free again from ${formatDate(next)}.`
+          : `${temp?.firstName ?? 'This temp'} is already booked for these dates.`;
+      } else {
+        const d = data?.details;
+        msg = d
+          ? (Object.values(d).flat() as string[])[0]
+          : err.message || 'Assignment failed';
+      }
       setError(prev => ({ ...prev, [job.id]: msg }));
     } finally { setAssigning(null); }
   };
@@ -65,7 +89,14 @@ export default function AssignJobPage() {
   const skillMatchCount = (job: Job) =>
     (job.requiredSkills ?? []).filter(s => temp?.skills?.includes(s)).length;
 
-  const availableJobs = temp ? jobs.filter(j => isTempAvailable(temp, j)) : jobs;
+  // Local date as YYYY-MM-DD, so it compares directly against the API's
+  // LocalDate strings without timezone drift.
+  const today = new Date().toLocaleDateString('en-CA');
+
+  const fillableJobs  = jobs.filter(j => isFillable(j, today));
+  const availableJobs  = temp ? fillableJobs.filter(j => isTempFree(temp, j)) : fillableJobs;
+  const conflictCount  = temp ? fillableJobs.length - availableJobs.length : 0;
+  const overdueCount   = jobs.filter(j => !j.temp && isOverdue(j, today)).length;
 
   const sorted = availableJobs.slice().sort((a, b) => {
     if (sort === 'skills')   return skillMatchCount(b) - skillMatchCount(a);
@@ -137,18 +168,23 @@ export default function AssignJobPage() {
           <FontAwesomeIcon icon="briefcase" className="text-border text-3xl mb-3 block mx-auto" />
           <p className="text-inactive text-sm">No available jobs for this temp.</p>
           <p className="text-inactive text-xs mt-1">
-            {jobs.length > availableJobs.length
-              ? `${jobs.length - availableJobs.length} job${jobs.length - availableJobs.length !== 1 ? 's' : ''} skipped due to date conflicts.`
-              : 'All jobs are either assigned, active, or completed.'}
+            {conflictCount > 0
+              ? `${conflictCount} job${conflictCount !== 1 ? 's' : ''} skipped — ${temp?.firstName ?? 'this temp'} is already booked on those dates.`
+              : overdueCount > 0
+              ? `${overdueCount} overdue job${overdueCount !== 1 ? 's' : ''} need closing, not staffing.`
+              : 'No open jobs need filling right now.'}
           </p>
         </Paper>
       ) : (
         <div className="space-y-3">
           <p className="text-inactive text-sm">
             {sorted.length} available job{sorted.length !== 1 ? 's' : ''}
-            {jobs.length > availableJobs.length && (
+            {(conflictCount > 0 || overdueCount > 0) && (
               <span className="ml-1 text-xs">
-                ({jobs.length - availableJobs.length} hidden — date conflict)
+                ({[
+                  conflictCount > 0 && `${conflictCount} date conflict`,
+                  overdueCount > 0 && `${overdueCount} overdue`,
+                ].filter(Boolean).join(' · ')} — not shown)
               </span>
             )}
           </p>
