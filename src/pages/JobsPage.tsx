@@ -250,6 +250,7 @@ export default function JobsPage() {
                           job={job}
                           detailMode
                           onRefresh={handleRefresh}
+                          onDeleted={() => { setSelectedId(null); setPreSelectedJob(null); }}
                           onSuccess={(title, msg) => {
                             setSelectedId(null);
                             setSuccess({ title, message: msg });
@@ -317,6 +318,7 @@ export default function JobsPage() {
                   job={selectedJob}
                   detailMode
                   onRefresh={handleRefresh}
+                  onDeleted={() => { setSelectedId(null); setPreSelectedJob(null); }}
                   onSuccess={(title, msg) => setSuccess({ title, message: msg })}
                 />
               </div>
