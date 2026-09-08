@@ -25,6 +25,26 @@ const STATUS_ICON: Record<string, any> = {
   COMPLETED: 'check',
 };
 
+function ScoreRow({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) {
+  return (
+    <div>
+      <p className="text-xs text-inactive mb-1.5">{label}</p>
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map(n => (
+          <button key={n} type="button" onClick={() => onChange(n)} aria-pressed={value === n}
+            className={`w-8 h-8 rounded border text-xs font-medium transition-colors ${
+              value >= n
+                ? 'bg-highlight border-highlight text-bg'
+                : 'border-border text-inactive hover:border-secondary'
+            }`}>
+            {n}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Stars({ value }: { value?: number | null }) {
   if (!value) return <span className="text-inactive text-xs">No rating</span>;
   const n = Math.round(Number(value));
@@ -45,9 +65,11 @@ interface JobCardProps {
   detailMode?: boolean;
   onRefresh: () => void;
   onSuccess: (title: string, message: string) => void;
+  /** Called after the job is deleted, so the parent can close the detail panel. */
+  onDeleted?: () => void;
 }
 
-export default function JobCard({ job, startExpanded = false, detailMode = false, onRefresh, onSuccess }: JobCardProps) {
+export default function JobCard({ job, startExpanded = false, detailMode = false, onRefresh, onSuccess, onDeleted }: JobCardProps) {
   const navigate = useNavigate();
   const [expanded, setExpanded]         = useState(startExpanded);
   const [panel, setPanel]               = useState<'actions' | 'edit' | 'review'>('actions');
@@ -71,7 +93,7 @@ export default function JobCard({ job, startExpanded = false, detailMode = false
   const [workQuality, setWorkQuality]     = useState(5);
   const [communication, setCommunication] = useState(5);
   const [onTime, setOnTime]               = useState(5);
-  const [comments, setComments]           = useState('Add comments ...');
+  const [comments, setComments]           = useState('');
 
   const canEditStartDate = job.status === 'INITIATED' && isFutureOrToday(job.startDate);
   const today = new Date().toISOString().split('T')[0];
@@ -197,6 +219,7 @@ export default function JobCard({ job, startExpanded = false, detailMode = false
     setLoading(true);
     try {
       await deleteJob(job.id);
+      onDeleted?.();
       onRefresh();
       onSuccess('Job deleted', `"${job.name}" has been deleted.`);
     } catch (err: any) { setError(err.message || 'Failed to delete'); }
@@ -219,22 +242,6 @@ export default function JobCard({ job, startExpanded = false, detailMode = false
 
   const toggleEditSkill = (id: number) =>
     setEditSkills(p => p.includes(id) ? p.filter(s => s !== id) : [...p, id]);
-
-  const ScoreRow = ({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) => (
-    <div>
-      <p className="text-xs text-inactive mb-1.5">{label}</p>
-      <div className="flex gap-1">
-        {[1,2,3,4,5].map(n => (
-          <button key={n} type="button" onClick={() => onChange(n)}
-            className={`w-8 h-8 rounded border text-xs transition-colors ${
-              value >= n ? 'bg-toplayer border-toplayer text-text' : 'border-border text-inactive hover:border-secondary'
-            }`}>
-            {n}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
 
   const expandedContent = (
     <>

@@ -162,10 +162,10 @@ export default function TempsPage() {
               {([
                 { key: 'az',          label: 'A→Z' },
                 { key: 'za',          label: 'Z→A' },
-                { key: 'rating-desc', label: '★↑' },
-                { key: 'rating-asc',  label: '★↓' },
-                { key: 'jobs-desc',   label: 'Jobs↑' },
-                { key: 'jobs-asc',    label: 'Jobs↓' },
+                { key: 'rating-asc',  label: '★↑' },
+                { key: 'rating-desc', label: '★↓' },
+                { key: 'jobs-asc',    label: 'Jobs↑' },
+                { key: 'jobs-desc',   label: 'Jobs↓' },
                 { key: 'location',    label: 'Location' },
               ] as { key: TempSort; label: string }[]).map(({ key, label }) => (
                 <button key={key} onClick={() => setSort(key)}
