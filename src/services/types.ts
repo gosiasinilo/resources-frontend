@@ -9,6 +9,8 @@ export interface Temp {
   city: string;
   rating?: number | null;
   jobCount?: number;
+  assignedJobCount?: number;
+  completedJobCount?: number;
 }
 
 export interface TempDetail extends Temp {

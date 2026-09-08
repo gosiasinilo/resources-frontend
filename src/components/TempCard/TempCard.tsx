@@ -97,6 +97,14 @@ export default function TempCard({ temp, detail, isSelected, onSelect, onRefresh
               : <span className="text-border">★ –</span>
             }
           </div>
+          <div className="flex items-center gap-2 text-inactive text-xs mt-0.5">
+            <span className="flex items-center gap-1">
+              <FontAwesomeIcon icon="briefcase" className="text-xs" />
+              {temp.assignedJobCount ?? 0} assigned
+            </span>
+            <span className="text-border">·</span>
+            <span>{temp.completedJobCount ?? 0} completed</span>
+          </div>
         </div>
         <FontAwesomeIcon
           icon={isSelected ? 'chevron-up' : 'chevron-down'}
